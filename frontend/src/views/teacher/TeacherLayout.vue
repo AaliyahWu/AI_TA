@@ -54,12 +54,35 @@ const currentUser = ref({
   phone: '0912-345-678'
 });
 
-onMounted(() => {
-  if (sessionStore.user) {
+onMounted(async () => {
+  if (sessionStore.user && sessionStore.user.id) {
     currentUser.value = { ...currentUser.value, ...sessionStore.user };
   } else {
-    sessionStore.setUser(currentUser.value);
-    sessionStore.setRole('teacher');
+    console.warn('No valid user session found, redirecting to login');
+    router.push({ name: 'login' });
+    return;
+  }
+
+  try {
+    const response = await fetch('http://localhost:3001/api/auth/me', {
+      headers: {
+        'user-id': sessionStore.user.id
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      sessionStore.setUser(data.user);
+      currentUser.value = { ...currentUser.value, ...data.user };
+    } else {
+      console.warn('Session validation failed, redirecting to login');
+      sessionStore.reset();
+      router.push({ name: 'login' });
+    }
+  } catch (error) {
+    console.error('Failed to validate session:', error);
+    sessionStore.reset();
+    router.push({ name: 'login' });
   }
 });
 

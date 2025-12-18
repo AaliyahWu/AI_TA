@@ -95,10 +95,30 @@ onMounted(() => {
   }
 });
 
-const saveProfile = () => {
-  sessionStore.setUser(editedProfile.value);
-  alert('✅ 個人資料已更新！');
-  goBack();
+const saveProfile = async () => {
+  try {
+    const response = await fetch('http://localhost:3001/api/auth/me', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'user-id': sessionStore.user?.id?.toString() || ''
+      },
+      body: JSON.stringify(editedProfile.value)
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      sessionStore.setUser(data.user);
+      alert('✅ 個人資料已更新！');
+      goBack();
+    } else {
+      const error = await response.json();
+      alert('❌ 更新失敗：' + (error.error || '未知錯誤'));
+    }
+  } catch (error) {
+    console.error('Save profile error:', error);
+    alert('❌ 網路錯誤，請稍後再試');
+  }
 };
 
 const goBack = () => {
