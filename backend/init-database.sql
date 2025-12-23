@@ -187,7 +187,55 @@ CREATE TABLE IF NOT EXISTS we2_sensor_data (
   INDEX idx_timestamp (timestamp)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 13. 教學建議表
+-- 13. 相似題表（AI 生成的相似題目）
+CREATE TABLE IF NOT EXISTS similar_questions (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  original_question_id INT NOT NULL,
+  similar_question_id INT NOT NULL,
+  similarity_score FLOAT DEFAULT 0.8,
+  generated_by_ai BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (original_question_id) REFERENCES questions(id) ON DELETE CASCADE,
+  FOREIGN KEY (similar_question_id) REFERENCES questions(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_question_pair (original_question_id, similar_question_id),
+  INDEX idx_original_id (original_question_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 14. 錯題原因表
+CREATE TABLE IF NOT EXISTS mistake_reasons (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  student_id INT NOT NULL,
+  question_id INT NOT NULL,
+  session_id INT,
+  reason_type VARCHAR(50),
+  reason_description TEXT,
+  recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE,
+  FOREIGN KEY (session_id) REFERENCES study_sessions(id) ON DELETE SET NULL,
+  INDEX idx_student_id (student_id),
+  INDEX idx_question_id (question_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 15. 講題會話表（儲存講題過程中的白板、逐字稿等）
+CREATE TABLE IF NOT EXISTS teaching_sessions (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  student_id INT NOT NULL,
+  question_id INT,
+  session_type ENUM('teaching', 'review') DEFAULT 'teaching',
+  whiteboard_data JSON,
+  transcript TEXT,
+  audio_url VARCHAR(255),
+  duration_seconds INT,
+  started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  ended_at TIMESTAMP NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE SET NULL,
+  INDEX idx_student_id (student_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 16. 教學建議表
 CREATE TABLE IF NOT EXISTS teaching_suggestions (
   id INT PRIMARY KEY AUTO_INCREMENT,
   class_id INT,
@@ -201,7 +249,7 @@ CREATE TABLE IF NOT EXISTS teaching_suggestions (
   FOREIGN KEY (unit_id) REFERENCES units(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 14. 會話表（用於前端狀態管理）
+-- 17. 會話表（用於前端狀態管理）
 CREATE TABLE IF NOT EXISTS sessions (
   id VARCHAR(255) PRIMARY KEY,
   user_id INT NOT NULL,

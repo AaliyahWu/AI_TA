@@ -570,7 +570,279 @@ app.post('/api/teacher/questions/import', async (req, res) => {
   }
 });
 
-// 啟動伺服器
+// ===== 學生功能 API ===== //
+
+// 1. 獲取題目（帶篩選）
+app.get('/api/questions', async (req, res) => {
+  try {
+    const { unit_id, difficulty, subject_id } = req.query;
+    
+    let query = 'SELECT q.* FROM questions q JOIN units u ON q.unit_id = u.id WHERE 1=1';
+    let params = [];
+    
+    if (unit_id) {
+      query += ' AND q.unit_id = ?';
+      params.push(unit_id);
+    }
+    
+    if (difficulty) {
+      query += ' AND q.difficulty = ?';
+      params.push(difficulty);
+    }
+    
+    if (subject_id) {
+      query += ' AND u.subject_id = ?';
+      params.push(subject_id);
+    }
+    
+    query += ' ORDER BY q.created_at DESC LIMIT 100';
+    
+    const [questions] = await db.query(query, params);
+    res.json({ questions });
+  } catch (error) {
+    console.error('Get questions error:', error);
+    res.status(500).json({ error: '伺服器錯誤' });
+  }
+});
+
+// 2. 獲取相似題目
+app.get('/api/questions/:id/similar', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // 先獲取原始題目的信息
+    const [originalQuestion] = await db.query(
+      'SELECT unit_id, subject_id, difficulty FROM questions WHERE id = ?',
+      [id]
+    );
+    
+    if (originalQuestion.length === 0) {
+      return res.status(404).json({ error: '題目不存在' });
+    }
+    
+    const { unit_id, difficulty } = originalQuestion[0];
+    
+    // 獲取相同單元和難度的其他題目作為相似題
+    const [similarQuestions] = await db.query(
+      `SELECT * FROM questions 
+       WHERE unit_id = ? AND difficulty = ? AND id != ? 
+       ORDER BY RAND() LIMIT 3`,
+      [unit_id, difficulty, id]
+    );
+    
+    res.json({ similarQuestions });
+  } catch (error) {
+    console.error('Get similar questions error:', error);
+    res.status(500).json({ error: '伺服器錯誤' });
+  }
+});
+
+// 3. 保存錯題原因
+app.post('/api/student/mistake-reasons', async (req, res) => {
+  try {
+    const userId = req.headers['user-id'];
+    const { question_id, session_id, reason_type, reason_description } = req.body;
+    
+    if (!userId || !question_id || !reason_type) {
+      return res.status(400).json({ error: '缺少必要參數' });
+    }
+    
+    const [result] = await db.query(
+      `INSERT INTO mistake_reasons 
+       (student_id, question_id, session_id, reason_type, reason_description, recorded_at) 
+       VALUES (?, ?, ?, ?, ?, NOW())`,
+      [userId, question_id, session_id || null, reason_type, reason_description || null]
+    );
+    
+    res.json({ 
+      success: true, 
+      id: result.insertId,
+      message: '錯題原因已保存' 
+    });
+  } catch (error) {
+    console.error('Save mistake reason error:', error);
+    res.status(500).json({ error: '伺服器錯誤' });
+  }
+});
+
+// 4. 獲取學生的錯題原因
+app.get('/api/student/mistake-reasons/:questionId', async (req, res) => {
+  try {
+    const userId = req.headers['user-id'];
+    const { questionId } = req.params;
+    
+    if (!userId) {
+      return res.status(401).json({ error: '未授權訪問' });
+    }
+    
+    const [reasons] = await db.query(
+      `SELECT * FROM mistake_reasons 
+       WHERE student_id = ? AND question_id = ? 
+       ORDER BY recorded_at DESC`,
+      [userId, questionId]
+    );
+    
+    res.json({ reasons });
+  } catch (error) {
+    console.error('Get mistake reasons error:', error);
+    res.status(500).json({ error: '伺服器錯誤' });
+  }
+});
+
+// 5. 保存教學會話
+app.post('/api/teaching-sessions', async (req, res) => {
+  try {
+    const userId = req.headers['user-id'];
+    const { 
+      question_id, 
+      session_type,
+      transcript, 
+      whiteboard_data, 
+      duration_seconds,
+      audio_url
+    } = req.body;
+    
+    if (!userId || !question_id) {
+      return res.status(400).json({ error: '缺少必要參數' });
+    }
+    
+    const [result] = await db.query(
+      `INSERT INTO teaching_sessions 
+       (student_id, question_id, session_type, transcript, whiteboard_data, duration_seconds, audio_url, started_at, created_at) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      [
+        userId, 
+        question_id, 
+        session_type || 'teaching',
+        transcript || null,
+        whiteboard_data ? JSON.stringify(whiteboard_data) : null,
+        duration_seconds || 0,
+        audio_url || null
+      ]
+    );
+    
+    res.json({ 
+      success: true, 
+      sessionId: result.insertId,
+      message: '教學會話已保存' 
+    });
+  } catch (error) {
+    console.error('Save teaching session error:', error);
+    res.status(500).json({ error: '伺服器錯誤' });
+  }
+});
+
+// 6. 獲取教學會話
+app.get('/api/teaching-sessions/:id', async (req, res) => {
+  try {
+    const userId = req.headers['user-id'];
+    const { id } = req.params;
+    
+    if (!userId) {
+      return res.status(401).json({ error: '未授權訪問' });
+    }
+    
+    const [sessions] = await db.query(
+      `SELECT * FROM teaching_sessions 
+       WHERE id = ? AND student_id = ?`,
+      [id, userId]
+    );
+    
+    if (sessions.length === 0) {
+      return res.status(404).json({ error: '會話不存在' });
+    }
+    
+    const session = sessions[0];
+    if (session.whiteboard_data) {
+      session.whiteboard_data = JSON.parse(session.whiteboard_data);
+    }
+    
+    res.json({ session });
+  } catch (error) {
+    console.error('Get teaching session error:', error);
+    res.status(500).json({ error: '伺服器錯誤' });
+  }
+});
+
+// 7. 獲取學生所有錯題
+app.get('/api/student/mistakes', async (req, res) => {
+  try {
+    const userId = req.headers['user-id'];
+    
+    if (!userId) {
+      return res.status(401).json({ error: '未授權訪問' });
+    }
+    
+    const [mistakes] = await db.query(
+      `SELECT DISTINCT
+        q.id,
+        q.question_text,
+        q.answer_text,
+        q.solution_text,
+        q.difficulty,
+        u.unit_name,
+        s.subject_name,
+        mr.reason_type,
+        mr.reason_description,
+        MAX(mr.recorded_at) as last_recorded_at
+      FROM mistake_reasons mr
+      JOIN questions q ON mr.question_id = q.id
+      JOIN units u ON q.unit_id = u.id
+      JOIN subjects s ON u.subject_id = s.id
+      WHERE mr.student_id = ?
+      GROUP BY mr.question_id
+      ORDER BY last_recorded_at DESC`,
+      [userId]
+    );
+    
+    res.json({ mistakes });
+  } catch (error) {
+    console.error('Get student mistakes error:', error);
+    res.status(500).json({ error: '伺服器錯誤' });
+  }
+});
+
+// 8. 獲取題目統計
+app.get('/api/student/stats', async (req, res) => {
+  try {
+    const userId = req.headers['user-id'];
+    
+    if (!userId) {
+      return res.status(401).json({ error: '未授權訪問' });
+    }
+    
+    // 總錯題數
+    const [mistakeCount] = await db.query(
+      'SELECT COUNT(DISTINCT question_id) as total FROM mistake_reasons WHERE student_id = ?',
+      [userId]
+    );
+    
+    // 本週新增
+    const [weeklyCount] = await db.query(
+      `SELECT COUNT(DISTINCT question_id) as total FROM mistake_reasons 
+       WHERE student_id = ? AND recorded_at > DATE_SUB(NOW(), INTERVAL 7 DAY)`,
+      [userId]
+    );
+    
+    // 錯題原因分佈
+    const [reasonDistribution] = await db.query(
+      `SELECT reason_type, COUNT(*) as count FROM mistake_reasons 
+       WHERE student_id = ? GROUP BY reason_type`,
+      [userId]
+    );
+    
+    res.json({
+      totalMistakes: mistakeCount[0]?.total || 0,
+      weeklyMistakes: weeklyCount[0]?.total || 0,
+      reasonDistribution: reasonDistribution || []
+    });
+  } catch (error) {
+    console.error('Get student stats error:', error);
+    res.status(500).json({ error: '伺服器錯誤' });
+  }
+});
+
+// ===== 啟動伺服器 ===== //
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
