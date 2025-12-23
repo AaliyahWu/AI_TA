@@ -16,6 +16,8 @@ import TeacherOverview from '@/views/teacher/TeacherOverview.vue';
 import TeacherStudentDetail from '@/views/teacher/TeacherStudentDetail.vue';
 import TeachingSuggestions from '@/views/teacher/TeachingSuggestions.vue';
 import TeacherProfileEdit from '@/views/teacher/TeacherProfileEdit.vue';
+import TeacherClassManagement from '@/views/teacher/TeacherClassManagement.vue';
+import TeacherImportQuestions from '@/views/teacher/TeacherImportQuestions.vue';
 
 import ParentLayout from '@/views/parent/ParentLayout.vue';
 import ParentOverview from '@/views/parent/ParentOverview.vue';
@@ -69,6 +71,16 @@ const routes = [
     component: TeacherLayout,
     children: [
       { path: '', name: 'teacher-overview', component: TeacherOverview },
+      {
+        path: 'classes',
+        name: 'teacher-classes',
+        component: TeacherClassManagement
+      },
+      {
+        path: 'import-questions',
+        name: 'teacher-import-questions',
+        component: TeacherImportQuestions
+      },
       {
         path: 'students/:id',
         name: 'teacher-student-detail',

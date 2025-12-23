@@ -1,26 +1,33 @@
 require('dotenv').config();
 const mysql = require('mysql2');
 
-// 建立 MySQL 連接
-const db = mysql.createConnection({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'ai_ta_db',
-  port: process.env.DB_PORT || 3306,
+// 建立 MySQL 連接池
+const dbConfig = {
+  host: 'localhost',
+  user: 'root',
+  password: '626Angel',
+  database: 'ai_ta_db',
+  port: 3305,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
-});
+};
 
-// 測試連接
+console.log(`Attempting to connect to MySQL at ${dbConfig.host}:${dbConfig.port} as ${dbConfig.user}...`);
+
+const db = mysql.createPool(dbConfig);
+
 db.getConnection((err, connection) => {
   if (err) {
-    console.error('Error connecting to MySQL database:', err.message);
+    console.error('Error connecting to MySQL database:');
+    console.error('Code:', err.code);
+    console.error('Message:', err.message);
+    console.error('Errno:', err.errno);
     return;
   }
-  console.log('Connected to the MySQL database.');
+  console.log('Connected to the MySQL database successfully!');
   connection.release();
 });
 
+// 導出連接池（同時支援回調和 promise）
 module.exports = db;

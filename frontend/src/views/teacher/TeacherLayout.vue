@@ -21,6 +21,16 @@
           </router-link>
         </li>
         <li>
+          <router-link to="/teacher/classes" class="nav-link">
+            📚 班級管理
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/teacher/import-questions" class="nav-link">
+            📤 匯入題目
+          </router-link>
+        </li>
+        <li>
           <router-link to="/teacher/suggestions" class="nav-link">
             💡 教學建議
           </router-link>
