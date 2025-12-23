@@ -5,9 +5,9 @@ const mysql = require('mysql2');
 const dbConfig = {
   host: 'localhost',
   user: 'root',
-  password: '626Angel',
+  password: '',
   database: 'ai_ta_db',
-  port: 3305,
+  port: 3306,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0

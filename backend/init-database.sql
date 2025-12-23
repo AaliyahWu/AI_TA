@@ -2,6 +2,80 @@
 -- AI 助教 (AI TA) 資料庫初始化腳本
 -- ==========================================
 
+/*M!999999\- enable the sandbox mode */ 
+-- MariaDB dump 10.19-12.0.2-MariaDB, for Win64 (AMD64)
+--
+-- Host: localhost    Database: ai_ta_db
+-- ------------------------------------------------------
+-- Server version	12.0.2-MariaDB
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*M!100616 SET @OLD_NOTE_VERBOSITY=@@NOTE_VERBOSITY, NOTE_VERBOSITY=0 */;
+
+--
+-- Table structure for table `users`
+--
+
+DROP TABLE IF EXISTS `users`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `users` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `email` varchar(255) NOT NULL,
+  `password_hash` varchar(255) NOT NULL,
+  `role` varchar(50) NOT NULL,
+  `full_name` varchar(255) NOT NULL,
+  `id_document_path` varchar(500) DEFAULT NULL,
+  `verification_status` enum('pending','approved','rejected') DEFAULT 'approved',
+  `verified_by` int(11) DEFAULT NULL,
+  `verified_at` datetime DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `grade` varchar(50) DEFAULT NULL,
+  `class` varchar(100) DEFAULT NULL,
+  `phone` varchar(20) DEFAULT NULL,
+  `student_name` varchar(255) DEFAULT NULL,
+  `relationship` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `email` (`email`),
+  KEY `fk_verified_by` (`verified_by`),
+  CONSTRAINT `fk_verified_by` FOREIGN KEY (`verified_by`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `users`
+--
+
+LOCK TABLES `users` WRITE;
+/*!40000 ALTER TABLE `users` DISABLE KEYS */;
+set autocommit=0;
+INSERT INTO `users` VALUES
+(1,'test1@test.com','$2b$10$XWyWei8nltsFkzFtq96NxObr.y9CoWlnQYpkIk9nmPgNRzxbtViRy','student','test1',NULL,'approved',NULL,NULL,'2025-12-18 16:37:14','','','',NULL,NULL),
+(2,'admin@test.com','$2b$10$N68zEf/.kcSl4xgpb0oxIOvue6KRhYYtzCs5s7oHYgSNjL67FqpWK','admin','admin',NULL,'approved',NULL,NULL,'2025-12-18 16:54:15',NULL,NULL,NULL,NULL,NULL);
+/*!40000 ALTER TABLE `users` ENABLE KEYS */;
+UNLOCK TABLES;
+commit;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
+
+-- Dump completed on 2025-12-18 17:55:01
+
+
 -- 1. 使用者表
 -- CREATE TABLE IF NOT EXISTS users (
 --   id INT PRIMARY KEY AUTO_INCREMENT,
