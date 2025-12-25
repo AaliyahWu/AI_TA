@@ -88,13 +88,13 @@
           <p>請選擇題庫或使用拍照搜題開始練習</p>
         </div>
       </div>
-      <div class="right">
+      <!-- <div class="right">
         <div class="whiteboard-header">
           <h3>數位白板 (FR1.3)</h3>
           <p>在此進行手寫計算，系統會自動保存</p>
         </div>
         <WhiteboardCanvas />
-      </div>
+      </div> -->
     </div>
   </div>
 </template>
